@@ -1,0 +1,3 @@
+TIMES=2
+DATABASE_URL=postgresql://localhost/ukla_dev
+IS_DEV=true
