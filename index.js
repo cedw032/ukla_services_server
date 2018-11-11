@@ -9,25 +9,20 @@ express()
 .use(express.static(path.join(__dirname, 'public')))
 .post('/user', async (req, res) => {
 	try {
-		console.log('body', req.body);
 		const result = db.create('user', req.body);
 		res.send(result);
-	} catch (err) {
-		console.error(err);
-		res.send("Error " + err);
+	} catch (e) {
+		console.error(e);
+		res.send(e);
 	}
 })
-.get('/db', async (req, res) => {
+.get('/user', async (req, res) => {
 	try {
-		const client = await pool.connect()
-		const result = await client.query('SELECT * FROM user');
-		const results = { 'results': (result) ? result.rows : null};
-		//res.render('pages/db', results );
-		res.send(results);
-		
-	} catch (err) {
-		console.error(err);
-		res.send("Error " + err);
+		const result = db.all('user');
+		res.send(result);
+	} catch (e) {
+		console.error(e);
+		res.send(e);
 	}
 })
 .listen(PORT, () => console.log(`Listening on ${ PORT }`))

@@ -1,7 +1,7 @@
 const escape = require('pg-escape');
 const { Pool } = require('pg');
 const pool = new Pool({
-connectionString: process.env.DATABASE_URL,
+	connectionString: process.env.DATABASE_URL,
 	ssl: !process.env.IS_DEV
 });
 
@@ -14,10 +14,19 @@ module.exports = {
 
 		const query = escape('INSERT INTO %I (' + fields + ') VALUES (' + values + ')', entity)
 
-		console.log('QUERY', query);
 		const result = await client.query(query)
 		client.release();	
 
-		return result;
+		return (result || {}).rows;
+	},
+
+	all: async (entity) => {
+		const client = await pool.connect()		
+		const query = escape('SELECT * FROM %I', entity)
+
+		const result = await client.query(query)
+		client.release();	
+
+		return (result || {}).rows;
 	}
 }
