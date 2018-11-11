@@ -9,7 +9,7 @@ express()
 .use(express.static(path.join(__dirname, 'public')))
 .post('/user', async (req, res) => {
 	try {
-		const result = db.create('user', req.body);
+		const result = await db.create('user', req.body);
 		res.send(result);
 	} catch (e) {
 		console.error(e);
@@ -18,7 +18,7 @@ express()
 })
 .get('/user', async (req, res) => {
 	try {
-		const result = db.all('user');
+		const result = await db.all('user');
 		res.send(result);
 	} catch (e) {
 		console.error(e);
