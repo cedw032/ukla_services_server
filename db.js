@@ -28,5 +28,18 @@ module.exports = {
 		client.release();	
 
 		return (result || {}).rows;
+	},
+
+	find: async (entity, constraints) => {
+		const client = await pool.connect()	
+		
+		const conditions = Object.keys(constraints).map((key) => escape.ident(key) + '=' + escape.literal(constraints[key])).join(' AND ');
+
+		const query = escape('SELECT * FROM %I WHERE ' + conditions, entity)
+
+		const result = await client.query(query)
+		client.release();	
+
+		return (result || {}).rows;	
 	}
 }

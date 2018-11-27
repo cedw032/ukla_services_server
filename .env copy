@@ -1,2 +1,4 @@
 DATABASE_URL=postgresql://localhost/ukla_dev
 IS_DEV=true
+
+PASSWORD_HASH_SECRET=dev_password_hash_secret
