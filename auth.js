@@ -17,10 +17,10 @@ const auth = {
 			throw new Error('User already exists');
 		}
 
-		const result = await db.create('user', {
+		const result = await db.create('user', [{
 			username,
 			password: hash(password)
-		});
+		}]);
 
 		return result;
 	},

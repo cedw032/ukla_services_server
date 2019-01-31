@@ -1,6 +1,7 @@
 const express = require('express')
 const path = require('path')
 const bodyParser = require('body-parser')
+const cors = require('cors')
 
 const db = require('./db');
 const auth = require('./auth');
@@ -11,8 +12,12 @@ const successResponse = (data) => ({status: 'success', data});
 const errorResponse = ({message}) => ({status: 'error', message});
 
 express()
+	.use(cors())
+
 	.use(bodyParser.json())
+
 	.use(express.static(path.join(__dirname, 'public')))
+
 	.post('/auth/register', async (req, res) => {
 		try {
 			const {username, password} = req.body;
@@ -23,6 +28,7 @@ express()
 			res.send(errorResponse(e));
 		}
 	})
+
 	.post('/auth/login', async (req, res) => {
 		try {
 			const {username, password} = req.body;
@@ -33,4 +39,24 @@ express()
 			res.send(errorResponse(e));
 		}
 	})
+
+	.post('/enrolment', async ({body: {students, enrolmentName}}, res) => {
+		
+		try {
+			await db.create('student', students.map((student) => ({
+				sid: student['SID'],
+				name: student['Name'],
+				quranTeacher: student['Teacher for Quran'],
+				islamiayatTeacher: student['Teacher for Islamiayat'],
+				grade: student['Islamiyat Grade'],
+				intake: enrolmentName
+			})));
+
+			res.jsonp(successResponse());
+		} catch (e) {
+			console.error(e);
+			res.send(errorResponse(e));
+		} 
+	})
+
 	.listen(PORT, () => console.log(`Listening on ${ PORT }`))

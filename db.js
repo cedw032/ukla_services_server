@@ -6,13 +6,19 @@ const pool = new Pool({
 });
 
 module.exports = {
+	// create('entity', [{field:'value'}]);
 	create: async (entity, data) => {
 		const client = await pool.connect()
 
-		const fields = Object.keys(data).map((key) => escape.ident(key)).join(',')
-		const values = Object.keys(data).map((key) => escape.literal(data[key])).join(',')
+		const [first] = data
+		const keys = Object.keys(first);
 
-		const query = escape('INSERT INTO %I (' + fields + ') VALUES (' + values + ')', entity)
+		const buildValueSet = (item) => '(' + keys.map((key) => escape.literal(item[key] + '')).join(',') + ')';
+
+		const values = data.map((item) => buildValueSet(item)).join(',');
+		const fields = keys.map((key) => escape.ident(key)).join(',');
+
+		const query = escape('INSERT INTO %I (' + fields + ') VALUES ' + values, entity)
 
 		const result = await client.query(query)
 		client.release();	
@@ -41,5 +47,19 @@ module.exports = {
 		client.release();	
 
 		return (result || {}).rows;	
+	}
+
+	groups: async (entity, field) => {
+		const client = await pool.connect()		
+
+		entity = escape.ident(entity); 
+		field = escape.ident(field); 
+
+		const query = escape(`SELECT ${field} FROM ${entity} GROUP BY ${field}`)
+
+		const result = await client.query(query)
+		client.release();	
+
+		return (result || {}).rows;
 	}
 }
