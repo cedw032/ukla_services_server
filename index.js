@@ -22,10 +22,10 @@ express()
 		try {
 			const {username, password} = req.body;
 			const result = await auth.register(username, password);
-			res.send(successResponse(result));
+			res.json(successResponse(result));
 		} catch (e) {
 			console.error(e);
-			res.send(errorResponse(e));
+			res.json(errorResponse(e));
 		}
 	})
 
@@ -33,15 +33,14 @@ express()
 		try {
 			const {username, password} = req.body;
 			const result = await auth.login(username, password);
-			res.send(successResponse(result));
+			res.json(successResponse(result));
 		} catch (e) {
 			console.error(e);
-			res.send(errorResponse(e));
+			res.json(errorResponse(e));
 		}
 	})
 
 	.post('/enrolment', async ({body: {students, enrolmentName}}, res) => {
-		
 		try {
 			await db.create('student', students.map((student) => ({
 				sid: student['SID'],
@@ -52,11 +51,31 @@ express()
 				intake: enrolmentName
 			})));
 
-			res.jsonp(successResponse());
+			res.json(successResponse());
 		} catch (e) {
 			console.error(e);
-			res.send(errorResponse(e));
+			res.json(errorResponse(e));
 		} 
+	})
+
+	.post('/query/intake', async (req, res) => {
+		try {
+			const intakes = await db.groups('student', 'intake');
+			res.json(successResponse(intakes));
+		} catch(e) {
+			console.error(e)
+			res.json(errorResponse(e))
+		}
+	})
+
+	.post('/query/student', async ({body: {constraints}}, res) => {
+		try {
+			const students = await db.find('student', constraints);
+			res.json(successResponse(students));
+		} catch(e) {
+			console.error(e)
+			res.json(errorResponse(e))
+		}
 	})
 
 	.listen(PORT, () => console.log(`Listening on ${ PORT }`))

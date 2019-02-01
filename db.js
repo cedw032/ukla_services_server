@@ -47,7 +47,7 @@ module.exports = {
 		client.release();	
 
 		return (result || {}).rows;	
-	}
+	}, 
 
 	groups: async (entity, field) => {
 		const client = await pool.connect()		
@@ -60,6 +60,6 @@ module.exports = {
 		const result = await client.query(query)
 		client.release();	
 
-		return (result || {}).rows;
+		return (result || {}).rows.map(({[field]: value}) => value);
 	}
 }
