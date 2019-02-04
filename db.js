@@ -8,9 +8,9 @@ const pool = new Pool({
 module.exports = {
 	// create('entity', [{field:'value'}]);
 	create: async (entity, data) => {
-		const client = await pool.connect()
+		const client = await pool.connect();
 
-		const [first] = data
+		const [first] = data;
 		const keys = Object.keys(first);
 
 		const buildValueSet = (item) => '(' + keys.map((key) => escape.literal(item[key] + '')).join(',') + ')';
@@ -18,12 +18,36 @@ module.exports = {
 		const values = data.map((item) => buildValueSet(item)).join(',');
 		const fields = keys.map((key) => escape.ident(key)).join(',');
 
-		const query = escape('INSERT INTO %I (' + fields + ') VALUES ' + values, entity)
+		const query = escape('INSERT INTO %I (' + fields + ') VALUES ' + values, entity);
 
-		const result = await client.query(query)
+		const result = await client.query(query);
 		client.release();	
 
 		return (result || {}).rows;
+	},
+
+	// update('entity', {id: {field: value}})
+	update: async (entity, data) => {
+
+		const client = await pool.connect();
+
+		const queries = Object.keys(data).map((id) => `
+			UPDATE ${escape.ident(entity)}
+			SET ${
+				Object.keys(data[id]).map((field) => `
+					${escape.ident(field)}
+					=
+					${escape.literal(data[id][field] + '')}
+				`).join(',')
+			}
+			WHERE id=${escape.literal(id + '')}
+		`)
+
+		const result = await client.query(queries.join(';'));
+		client.release();	
+
+		return (result || {}).rows;
+			
 	},
 
 	all: async (entity) => {
@@ -39,7 +63,11 @@ module.exports = {
 	find: async (entity, constraints) => {
 		const client = await pool.connect()	
 		
-		const conditions = Object.keys(constraints).map((key) => escape.ident(key) + '=' + escape.literal(constraints[key])).join(' AND ');
+		const conditions = Object.keys(constraints).map(key => 
+			`${escape.ident(key)} IN (${constraints[key].map(value =>
+				escape.literal(value + '')
+			).join(',')})` 
+		).join(' AND ');
 
 		const query = escape('SELECT * FROM %I WHERE ' + conditions, entity)
 
