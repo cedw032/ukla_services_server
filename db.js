@@ -1,5 +1,12 @@
-const escape = require('pg-escape');
+
 const { Pool } = require('pg');
+
+const {
+	identifier,
+	literal,
+	model,
+} = require('./utils/dbPrepare');
+
 const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
 	ssl: !process.env.IS_DEV
@@ -13,17 +20,24 @@ module.exports = {
 		const [first] = data;
 		const keys = Object.keys(first);
 
-		const buildValueSet = (item) => '(' + keys.map((key) => escape.literal(item[key] + '')).join(',') + ')';
+		const buildValueSet = (item) => '(' + keys.map((key) => literal(item[key])).join(',') + ')';
 
 		const values = data.map((item) => buildValueSet(item)).join(',');
-		const fields = keys.map((key) => escape.ident(key)).join(',');
+		const fields = keys.map((key) => identifier(key)).join(',');
 
-		const query = escape('INSERT INTO %I (' + fields + ') VALUES ' + values, entity);
-
+		const query = `
+			INSERT INTO ${identifier(entity)}
+			(
+				${fields}
+			)
+			VALUES
+				${values};
+		`;
+		
 		const result = await client.query(query);
 		client.release();	
 
-		return (result || {}).rows;
+		return (result || {}).rows.map(model);
 	},
 
 	// update('entity', {id: {field: value}})
@@ -32,62 +46,65 @@ module.exports = {
 		const client = await pool.connect();
 
 		const queries = Object.keys(data).map((id) => `
-			UPDATE ${escape.ident(entity)}
+			UPDATE ${identifier(entity)}
 			SET ${
 				Object.keys(data[id]).map((field) => `
-					${escape.ident(field)}
+					${identifier(field)}
 					=
-					${escape.literal(data[id][field] + '')}
+					${literal(data[id][field])}
 				`).join(',')
 			}
-			WHERE id=${escape.literal(id + '')}
+			WHERE id=${literal(id)}
 		`)
 
 		const result = await client.query(queries.join(';'));
 		client.release();	
 
-		return (result || {}).rows;
+		return (result || {}).rows.map(model);
 			
 	},
 
 	all: async (entity) => {
 		const client = await pool.connect()		
-		const query = escape('SELECT * FROM %I', entity)
+		const query = `SELECT * FROM ${identifier(entity)}`;
 
 		const result = await client.query(query)
 		client.release();	
 
-		return (result || {}).rows;
+		return (result || {}).rows.map(model);
 	},
 
 	find: async (entity, constraints) => {
 		const client = await pool.connect()	
 		
 		const conditions = Object.keys(constraints).map(key => 
-			`${escape.ident(key)} IN (${constraints[key].map(value =>
-				escape.literal(value + '')
+			`${identifier(key)} IN (${constraints[key].map(value =>
+				literal(value)
 			).join(',')})` 
 		).join(' AND ');
 
-		const query = escape('SELECT * FROM %I WHERE ' + conditions, entity)
+		const query = `
+			SELECT * FROM ${identifier(entity)}
+			WHERE ${conditions}
+		`;
 
 		const result = await client.query(query)
 		client.release();	
 
-		return (result || {}).rows;	
+		return (result || {}).rows.map(model);	
 	}, 
 
 	groups: async (entity, field) => {
 		const client = await pool.connect()		
 
-		entity = escape.ident(entity); 
-		field = escape.ident(field); 
+		entity = identifier(entity); 
+		field = identifier(field); 
 
-		const query = escape(`SELECT ${field} FROM ${entity} GROUP BY ${field}`)
+		const query = `SELECT ${field} FROM ${entity} GROUP BY ${field}`;
 
 		const result = await client.query(query)
 		client.release();	
 
-		return (result || {}).rows.map(({[field]: value}) => value);
+		return (result || {}).rows.map(model).map(({[field]: value}) => value);
 	}
 }
