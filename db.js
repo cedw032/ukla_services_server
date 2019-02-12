@@ -33,7 +33,7 @@ module.exports = {
 			VALUES
 				${values};
 		`;
-		
+
 		const result = await client.query(query);
 		client.release();	
 
@@ -60,7 +60,8 @@ module.exports = {
 		const result = await client.query(queries.join(';'));
 		client.release();	
 
-		return (result || {}).rows.map(model);
+		const {rows = []} = (result || {});
+		return rows.map(model);
 			
 	},
 
@@ -71,7 +72,8 @@ module.exports = {
 		const result = await client.query(query)
 		client.release();	
 
-		return (result || {}).rows.map(model);
+		const {rows = []} = (result || {});
+		return rows.map(model);
 	},
 
 	find: async (entity, constraints) => {
@@ -91,7 +93,8 @@ module.exports = {
 		const result = await client.query(query)
 		client.release();	
 
-		return (result || {}).rows.map(model);	
+		const {rows = []} = (result || {});
+		return rows.map(model);	
 	}, 
 
 	groups: async (entity, field) => {
@@ -105,6 +108,9 @@ module.exports = {
 		const result = await client.query(query)
 		client.release();	
 
-		return (result || {}).rows.map(model).map(({[field]: value}) => value);
+		const {rows = []} = (result || {});
+		return rows
+			.map(model)
+			.map(({[field]: value}) => value);
 	}
 }
